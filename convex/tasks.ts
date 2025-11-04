@@ -4,9 +4,18 @@ import { Doc, Id } from "./_generated/dataModel";
 
 export const getTasks = query({
   args: {
+    searchQuery: v.optional(v.string()), 
     filter: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    
+    if (args.searchQuery) {
+      return await ctx.db
+        .query("tasks")
+        .withSearchIndex("by_title", (q) => q.search("title", args.searchQuery!))
+        .collect();
+    }
+
     let q = ctx.db.query("tasks");
 
     if (args.filter === "active") {
@@ -19,14 +28,24 @@ export const getTasks = query({
       return await q.withIndex("by_order").order("asc").collect();
     } catch (err) {
       console.warn("⚠️ Index 'by_order' not available, falling back:", err);
-      return await q.order("asc").collect();
+      return await q.order("asc").collect(); 
     }
+  },
+});
+
+export const getById = query({
+  args: { id: v.id("tasks") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
   },
 });
 
 export const create = mutation({
   args: {
-    title: v.string(), 
+    title: v.string(),
+    // Add these back
+    description: v.optional(v.string()),
+    dueDate: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const lastTask = await ctx.db
@@ -39,6 +58,8 @@ export const create = mutation({
 
     return await ctx.db.insert("tasks", {
       title: args.title,
+      description: args.description,
+      dueDate: args.dueDate,
       completed: false,
       order: nextOrder,
     });
@@ -54,7 +75,21 @@ export const updateCompletion = mutation({
     await ctx.db.patch(args.id, { completed: args.completed });
   },
 });
- 
+
+export const updateDetails = mutation({
+  args: {
+    id: v.id("tasks"),
+    title: v.optional(v.string()),
+    description: v.optional(v.string()),
+    dueDate: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...updates } = args;
+    await ctx.db.patch(id, updates);
+  },
+});
+
+
 export const deleteTask = mutation({
   args: { id: v.id("tasks") },
   handler: async (ctx, args) => {

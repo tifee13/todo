@@ -24,7 +24,10 @@ import { useTheme } from '../context/ThemeContext';
 import TaskItem from '../components/TaskItem';
 import TaskInput from '../components/TaskInput';
 import FilterButtons from '../components/FilterButtons';
+// 1. Import the new SearchInput
+import SearchInput from '../components/SearchInput';
 
+// --- Styled Components (No changes) ---
 const AppContainer = styled.View`
   flex: 1;
   background-color: ${(props) => props.theme.bg};
@@ -69,19 +72,17 @@ const ThemeIcon = styled.Image`
 `;
 const ListContainer = styled.View`
   flex: 1;
-  margin-top: 16px;
+  /* 2. Remove margin-top to place it right under search */
   border-radius: 6px;
   background-color: ${(props) => props.theme.card};
   overflow: hidden;
 
-  /* Native shadow */
   elevation: 5;
   shadow-color: #000;
   shadow-offset: 0px 10px;
   shadow-opacity: 0.1;
   shadow-radius: 12px;
 
-  /* Web shadow */
   ${Platform.OS === 'web' && `
     box-shadow: 0px 10px 12px rgba(0, 0, 0, 0.1);
   `}
@@ -103,14 +104,12 @@ const MobileFilterContainer = styled.View`
   border-radius: 6px;
   background-color: ${(props) => props.theme.card};
 
-  /* Native shadow */
   elevation: 5;
   shadow-color: #000;
   shadow-offset: 0px 10px;
   shadow-opacity: 0.1;
   shadow-radius: 12px;
 
-  /* Web shadow */
   ${Platform.OS === 'web' && `
     box-shadow: 0px 10px 12px rgba(0, 0, 0, 0.1);
   `}
@@ -125,25 +124,41 @@ const EmptyListText = styled(FooterText)`
   margin-top: 20px;
   padding: 20px;
 `;
+// --- End Styled Components ---
 
+// --- Load Assets (No changes) ---
 const bgMobileLight = require('../assets/images/bg-mobile-light.jpg');
 const bgMobileDark = require('../assets/images/bg-mobile-dark.jpg');
 const bgDesktopLight = require('../assets/images/bg-desktop-light.jpg');
 const bgDesktopDark = require('../assets/images/bg-desktop-dark.jpg');
 const iconSun = require('../assets/images/icon-sun.png');
 const iconMoon = require('../assets/images/icon-moon.png');
+// ---
 
 export default function TodoScreen() {
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
-  const tasks = useQuery(api.tasks.getTasks, { filter: filter });
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const tasks = useQuery(api.tasks.getTasks, { 
+    searchQuery: searchQuery || undefined, 
+    filter: filter 
+  });
+  
   const updateOrder = useMutation(api.tasks.updateOrder);
   const clearCompleted = useMutation(api.tasks.clearCompleted);
+  const router = useRouter();
   const { themeMode, setThemeMode, isDark, theme } = useTheme();
   
   const { width } = useWindowDimensions();
   const isDesktop = width > 600; 
 
+  const handleEditTask = (task: Doc<'tasks'>) => {
+    router.push({ pathname: '/modal', params: { id: task._id } });
+  };
+
   const handleDragEnd = async ({ data: reorderedTasks }: { data: Doc<'tasks'>[] }) => {
+    if (searchQuery) return;
+    
     const tasksToUpdate = reorderedTasks.map((task, index) => ({
       id: task._id, order: index,
     }));
@@ -166,6 +181,7 @@ export default function TodoScreen() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AppContainer>
         <StyledImageBackground source={bgImage} resizeMode="cover" $isDesktop={isDesktop} />
+        
         <SafeAreaView style={{ flex: 1 }} edges={['top']}>
           <ContentContainer $isDesktop={isDesktop}>
             
@@ -176,7 +192,12 @@ export default function TodoScreen() {
               </Pressable>
             </HeaderContainer>
 
-            <TaskInput />
+            <Pressable onPress={() => router.push('/modal')}>
+              <TaskInput />
+            </Pressable>
+
+            {/* 3. Add the SearchInput component here */}
+            <SearchInput searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 
             <ListContainer>
               {tasks === undefined ? (
@@ -189,12 +210,23 @@ export default function TodoScreen() {
                   dragItemOverflow={true}
                   renderItem={({ item, drag, isActive }: RenderItemParams<Doc<'tasks'>>) => (
                     <ScaleDecorator>
-                      <TaskItem task={item} drag={drag} isActive={isActive}/>
+                      <TaskItem 
+                        task={item} 
+                        drag={drag} 
+                        isActive={isActive}
+                        onEdit={() => handleEditTask(item)}
+                        isDragDisabled={!!searchQuery}
+                      />
                     </ScaleDecorator>
                   )}
                   ListEmptyComponent={
                     <EmptyListText>
-                      {filter === 'all' ? 'No tasks yet. Add one!' : `No ${filter} tasks.`}
+                      {searchQuery
+                        ? 'No tasks match your search'
+                        : filter === 'all'
+                        ? 'No tasks yet. Add one!'
+                        : `No ${filter} tasks.`
+                      }
                     </EmptyListText>
                   }
                   ListFooterComponent={() => (

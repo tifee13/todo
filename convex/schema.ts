@@ -4,6 +4,9 @@ import { v } from "convex/values";
 export default defineSchema({
   tasks: defineTable({
     title: v.string(),
+    description: v.optional(v.string()),
+    dueDate: v.optional(v.string()),
+    
     completed: v.boolean(),
     order: v.optional(v.number()),
   })

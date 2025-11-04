@@ -5,7 +5,7 @@ import {
   View,
   Text,
   Image,
-  Platform, 
+  Platform,
 } from 'react-native';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -28,20 +28,16 @@ const ItemContainer = styled.Pressable<{ $isActive: boolean }>`
   ${(props) =>
     props.$isActive &&
     css`
-      /* Native shadow */
       elevation: 3;
       shadow-color: #000;
       shadow-offset: 0px 5px;
       shadow-opacity: 0.1;
       shadow-radius: 5px;
-
-      /* Web shadow */
       ${Platform.OS === 'web' && `
         box-shadow: 0px 5px 5px rgba(0, 0, 0, 0.1);
       `}
     `}
 `;
-
 const CheckboxContainer = styled.Pressable`
   margin-right: 12px;
 `;
@@ -88,17 +84,20 @@ type TaskItemProps = {
   task: Doc<'tasks'>;
   drag: () => void;
   isActive: boolean;
+  onEdit: () => void;
+  isDragDisabled?: boolean;
 };
 
 export default function TaskItem({
   task,
   drag,
   isActive,
+  onEdit,
+  isDragDisabled = false,
 }: TaskItemProps) {
   const updateCompletion = useMutation(api.tasks.updateCompletion);
   const deleteTask = useMutation(api.tasks.deleteTask);
   const { theme } = useTheme();
-
   const [isHovered, setIsHovered] = useState(false);
 
   const toggleComplete = async () => {
@@ -122,7 +121,8 @@ export default function TaskItem({
 
   return (
     <ItemContainer
-      onLongPress={drag}
+      onLongPress={!isDragDisabled ? drag : undefined}
+      onPress={onEdit}
       delayLongPress={150}
       $isActive={isActive}
       onHoverIn={() => setIsHovered(true)}

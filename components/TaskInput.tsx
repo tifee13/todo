@@ -1,7 +1,4 @@
-import React, { useState } from 'react';
-import { Alert } from 'react-native';
-import { useMutation } from 'convex/react';
-import { api } from '@/convex/_generated/api';
+import React from 'react';
 import { useTheme } from '../context/ThemeContext';
 import styled from 'styled-components/native';
 
@@ -22,43 +19,20 @@ const CheckboxPlaceholder = styled.View`
   margin-right: 12px;
 `;
 
-const StyledInput = styled.TextInput`
+const StyledPlaceholder = styled.Text`
   flex: 1;
   font-size: 18px;
   font-family: 'Josefin Sans';
-  color: ${(props) => props.theme.text};
+  color: ${(props) => props.theme.textPlaceholder};
 `;
 
 export default function TaskInput() {
-  const [title, setTitle] = useState('');
-  const createTask = useMutation(api.tasks.create);
   const { theme } = useTheme();
-
-  const handleCreateTask = async () => {
-    if (!title.trim()) {
-      return;
-    
-    }
-    try {
-      await createTask({ title });
-      setTitle(''); 
-    } catch (e) {
-      Alert.alert('Error', 'Failed to create task');
-      console.error(e);
-    }
-  };
 
   return (
     <InputContainer>
       <CheckboxPlaceholder />
-      <StyledInput
-        placeholder="Create a new todo..."
-        value={title}
-        onChangeText={setTitle}
-        onSubmitEditing={handleCreateTask}
-        returnKeyType="done"
-        placeholderTextColor={theme.textPlaceholder}
-      />
+      <StyledPlaceholder>Create a new todo...</StyledPlaceholder>
     </InputContainer>
   );
 }

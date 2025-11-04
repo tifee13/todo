@@ -7,7 +7,7 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
 
 import styled, { ThemeProvider as StyledThemeProvider } from 'styled-components/native';
 import { CustomThemeProvider, useTheme, lightTheme } from '../context/ThemeContext';
@@ -58,7 +58,7 @@ function AppContent() {
     <>
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
-        {/* ❌ REMOVED <Stack.Screen name="modal" ... /> */}
+        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal', headerShown: false }} />
       </Stack>
       <StatusBar style={isDark ? 'light' : 'dark'} />
     </>
